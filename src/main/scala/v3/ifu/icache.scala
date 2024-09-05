@@ -187,7 +187,7 @@ class ICacheModule(outer: ICache) extends LazyModuleImp(outer)
   val dataArrays = if (nBanks == 1) {
     // Use unbanked icache for narrow accesses.
     (0 until nWays).map { x =>
-      DescribedSRAM(
+      xs.utils.sram.DftSRAM(
         name = s"dataArrayWay_${x}",
         desc = "ICache Data Array",
         size = ramDepth,
@@ -197,20 +197,21 @@ class ICacheModule(outer: ICache) extends LazyModuleImp(outer)
   } else {
     // Use two banks, interleaved.
     (0 until nWays).map { x =>
-      DescribedSRAM(
+      xs.utils.sram.DftSRAM(
         name = s"dataArrayB0Way_${x}",
         desc = "ICache Data Array",
         size = ramDepth,
         data = UInt((wordBits/nBanks).W)
       )} ++
     (0 until nWays).map { x =>
-      DescribedSRAM(
+      xs.utils.sram.DftSRAM(
         name = s"dataArrayB1Way_${x}",
         desc = "ICache Data Array",
         size = ramDepth,
         data = UInt((wordBits/nBanks).W)
       )}
   }
+  xs.utils.mbist.MbistPipeline.PlaceMbistPipeline(1, "IcacheMbistPipeline")
   if (nBanks == 1) {
     // Use unbanked icache for narrow accesses.
     s1_bankid := 0.U
