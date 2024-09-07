@@ -1347,7 +1347,7 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
   val coreMonitorBundle = Wire(new CoreMonitorBundle(xLen, fLen))
   coreMonitorBundle := DontCare
   coreMonitorBundle.clock  := clock
-  coreMonitorBundle.reset  := reset
+  coreMonitorBundle.reset  := reset.asBool
 
 
   //-------------------------------------------------------------

@@ -174,13 +174,14 @@ class ICacheModule(outer: ICache) extends LazyModuleImp(outer)
   val ramDepth = nSets * refillCycles
 
   val dataArrays = Seq.tabulate(nBanks) { b =>
-    DescribedSRAM(
+    xs.utils.sram.DftSRAM(
       name = s"dataArrayB${b}",
       desc = "ICache Data Array",
       size = ramDepth,
       data = Vec(nWays, UInt((wordBits/nBanks).W))
     )
   }
+  xs.utils.mbist.MbistPipeline.PlaceMbistPipeline(1, "IcacheMbistPipeline")
   if (nBanks == 1) {
     // Use unbanked icache for narrow accesses.
     s1_bankid := 0.U
