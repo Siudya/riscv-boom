@@ -286,7 +286,7 @@ class BoomDuplicatedDataArray(implicit p: Parameters) extends AbstractBoomDataAr
 
     val raddr = io.read(j).bits.addr >> rowOffBits
     for (w <- 0 until nWays) {
-      val array = DescribedSRAM(
+      val array = xs.utils.sram.DftSRAM(
         name = s"array_${w}_${j}",
         desc = "Non-blocking DCache Data Array",
         size = nSets * refillCycles,
@@ -354,7 +354,7 @@ class BoomBankedDataArray(implicit p: Parameters) extends AbstractBoomDataArray 
   io.s1_nacks          := s1_nacks
 
   val data_arrays = Seq.tabulate(nBanks) {
-    b => DescribedSRAM(
+    b => xs.utils.sram.DftSRAM(
       name = s"array_${b}",
       desc = "Boom DCache data array",
       size = bankSize,
@@ -485,6 +485,7 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
 
   // data
   val data = Module(if (boomParams.numDCacheBanks == 1) new BoomDuplicatedDataArray else new BoomBankedDataArray)
+  xs.utils.mbist.MbistPipeline.PlaceMbistPipeline(1, "DcacheMbistPipeline")
   val dataWriteArb = Module(new Arbiter(new L1DataWriteReq, 2))
   // 0 goes to pipeline, 1 goes to MSHR refills
   val dataReadArb = Module(new Arbiter(new BoomL1DataReadReq, 3))

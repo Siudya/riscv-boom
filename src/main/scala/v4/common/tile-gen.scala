@@ -13,17 +13,20 @@ import freechips.rocketchip.diplomacy.RegionType.TRACKED
 import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.resources.{BindingScope, SimpleBus}
-import org.chipsalliance.diplomacy.lazymodule.{LazyModule, LazyModuleImp}
+import org.chipsalliance.diplomacy.lazymodule.{LazyModule, LazyModuleImpLike, LazyRawModuleImp}
 import org.chipsalliance.diplomacy.bundlebridge._
 import freechips.rocketchip.rocket.{DCacheParams, HellaCacheArbiter, HellaCacheIO, ICacheParams, PTW}
 import freechips.rocketchip.tile.{HasNonDiplomaticTileParameters, MaxHartIdBits, PriorityMuxHartIdFromSeq, TileKey, TileVisibilityNodeKey, TraceBundle}
 import org.chipsalliance.cde.config.{Config, Field, Parameters}
 import freechips.rocketchip.tilelink._
 import org.chipsalliance.diplomacy.{DisableMonitors, ValName}
+import xs.utils.FileRegisters
+import xs.utils.dft.{HasIjtag, SimpleDftCore, SimpleDftParams}
 
 import scala.collection.mutable.ListBuffer
 
 case object MngParamsKey extends Field[TLSlavePortParameters]
+case object DftKey extends Field[Boolean]
 
 class TileCfg extends Config((site, here, up) => {
   case TileKey => BoomTileParams(
@@ -78,6 +81,7 @@ class TileCfg extends Config((site, here, up) => {
     endSinkId = 1024,
     minLatency = 16
   )
+  case DftKey => true
 })
 
 class RawTileTop(implicit p:Parameters) extends LazyModule with BindingScope
@@ -98,13 +102,18 @@ class RawTileTop(implicit p:Parameters) extends LazyModule with BindingScope
   frontend.resetVectorSinkNode := resetVectorNode
 
   lazy val module = new Impl
-
-  class Impl extends LazyModuleImp(this) {
+  class Impl extends LazyRawModuleImp(this) with HasIjtag with SimpleDftCore {
+    val mName = "RawTileTop"
+    val dftParams = SimpleDftParams()
+    override def provideImplicitClockToLazyChildren = true
+    childClock := masterClock
+    childReset := masterReset
     val tl = masterNode.makeIOs()
     val reset_vector = resetVectorNode.makeIOs()
 
-    private val core = Module(new BoomCore()(q))
-    private val lsu = Module(new LSU()(q, dcache.module.edge))
+    private val (core, lsu) = withClockAndReset(childClock, childReset){
+      (Module(new BoomCore()(q)), Module(new LSU()(q, dcache.module.edge)))
+    }
     private val ptwPorts         = ListBuffer(lsu.io.ptw, frontend.module.io.ptw, core.io.ptw_tlb)
     private val hellaCachePorts  = ListBuffer[HellaCacheIO]()
 
@@ -121,12 +130,16 @@ class RawTileTop(implicit p:Parameters) extends LazyModule with BindingScope
     core.io.lsu <> lsu.io.core
     core.io.rocc := DontCare
 
-    private val ptw  = Module(new PTW(ptwPorts.length)(dcache.node.edges.out.head, q))
+    private val ptw  = withClockAndReset(childClock, childReset){
+      Module(new PTW(ptwPorts.length)(dcache.node.edges.out.head, q))
+    }
     core.io.ptw <> ptw.io.dpath
     ptw.io.requestor <> ptwPorts.toSeq
     ptw.io.mem +=: hellaCachePorts
 
-    private val hellaCacheArb = Module(new HellaCacheArbiter(hellaCachePorts.length)(q))
+    private val hellaCacheArb = withClockAndReset(childClock, childReset){
+      Module(new HellaCacheArbiter(hellaCachePorts.length)(q))
+    }
     hellaCacheArb.io.requestor <> hellaCachePorts.toSeq
     lsu.io.hellacache <> hellaCacheArb.io.mem
     dcache.module.io.lsu <> lsu.io.dmem
@@ -139,6 +152,9 @@ class RawTileTop(implicit p:Parameters) extends LazyModule with BindingScope
         + coreStr + "\n")
     override def toString: String = boomTileStr
     print(boomTileStr)
+    if(dftInit) {
+      println("DFT compnents are inserted")
+    }
   }
 }
 
@@ -158,4 +174,6 @@ object TopMain extends App {
       " disallowExpressionInliningInPorts, disallowMuxInlining"),
     ChiselGeneratorAnnotation(() => tile.module)
   ))
+  xs.utils.dft.FileManager.writeOut("RawTileTop")
+  FileRegisters.write("build", "RawTileTop.")
 }
