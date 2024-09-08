@@ -7,3 +7,7 @@ lib
 *~
 .nfs*
 .#*
+out
+.idea
+sbt.json
+build
