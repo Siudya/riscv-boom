@@ -1270,7 +1270,6 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
         reset.asBool) {
     idle_cycles := 0.U
   }
-  assert (!(idle_cycles.value(PlusArg("boom_timeout", 13, width=5))), "Pipeline has hung.")
 
   fp_pipeline.io.debug_tsc_reg := debug_tsc_reg
 

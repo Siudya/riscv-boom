@@ -1,8 +1,25 @@
-SBT		?= sbt
-#SBT_FLAGS	?= -Dsbt.log.noformat=true
+idea:
+	mill -i mill.idea.GenIdea/idea
 
-.PHONY: checkstyle
+init:
+	git submodule update --init
+	cd rocket-chip/dependencies && git submodule update --init cde hardfloat diplomacy
 
+comp:
+	mill -i boom.compile
+	
+v3:
+	mkdir -p build/v3/rtl
+	mill -i boom.runMain boom.v3.TopMain --full-stacktrace -td build/v3/rtl --target systemverilog --split-verilog
 
-checkstyle:
-	$(SBT) $(SBT_FLAGS) scalastyle test:scalastyle
+v4:
+	mkdir -p build/v4/rtl
+	mill -i boom.runMain boom.v4.TopMain --full-stacktrace -td build/v4/rtl --target systemverilog --split-verilog
+
+help:
+	mill -i boom.runMain boom.v3.TopMain --help
+
+clean:
+	rm -r build
+
+.PHONY: clean
