@@ -8,17 +8,16 @@ package boom.v4.lsu
 
 import chisel3._
 import chisel3.util._
-
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.util._
 import freechips.rocketchip.rocket._
-
 import boom.v4.common._
 import boom.v4.exu.BrUpdateInfo
 import boom.v4.util._
+import xs.utils.tl.{TLNanhuBusKey, TLNanhuUserBundle, TLUserKey}
 
 class BoomDCacheReqInternal(implicit p: Parameters) extends BoomDCacheReq()(p)
   with HasL1HellaCacheParameters
@@ -168,6 +167,9 @@ class BoomMSHR(implicit edge: TLEdgeOut, p: Parameters) extends BoomModule()(p)
     toAddress       = Cat(req_tag, req_idx) << blockOffBits,
     lgSize          = lgCacheBlockBytes.U,
     growPermissions = grow_param)._2
+  private val userField = io.mem_acquire.bits.user.lift(TLNanhuBusKey).getOrElse(Wire(new TLNanhuUserBundle))
+  userField.alias.foreach(_ := req_tag(p(TLUserKey).aliasBits - 1, 0))
+  userField.pfHint := false.B
   io.refill.valid        := false.B
   io.refill.bits.addr   := req_block_addr | (refill_ctr << rowOffBits)
   io.refill.bits.way_en := req.way_en

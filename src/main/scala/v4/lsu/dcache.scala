@@ -8,17 +8,16 @@ package boom.v4.lsu
 
 import chisel3._
 import chisel3.util._
-
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.util._
 import freechips.rocketchip.rocket._
-
 import boom.v4.common._
 import boom.v4.exu.BrUpdateInfo
 import boom.v4.util._
+import xs.utils.tl.TLNanhuBusField
 
 
 class BoomWritebackUnit(implicit edge: TLEdgeOut, p: Parameters) extends L1HellaCacheModule()(p) {
@@ -419,7 +418,9 @@ class BoomNonBlockingDCache(staticIdForMetadataUseOnly: Int)(implicit p: Paramet
 
   val node = TLClientNode(Seq(TLMasterPortParameters.v1(
     cacheClientParameters ++ mmioClientParameters,
-    minLatency = 1)))
+    minLatency = 1,
+    requestFields = Seq(new TLNanhuBusField)
+  )))
 
 
   lazy val module = new BoomNonBlockingDCacheModule(this)
