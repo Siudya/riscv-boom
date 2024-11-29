@@ -59,7 +59,11 @@ class RenameFreeList(
     extends AbstractRenameFreeList(allocWidth, deallocWidth, numPregs)
 {
   // The free list register array and its branch allocation lists.
-  val free_list = RegInit(UInt(numPregs.W), io.initial_allocation)
+  val resetReg = RegNext(false.B, true.B)
+  val free_list = Reg(UInt(numPregs.W))
+  when(resetReg) {
+    free_list := io.initial_allocation
+  }
   val spec_alloc_list = RegInit(0.U(numPregs.W))
   val br_alloc_lists = Reg(Vec(maxBrCount, UInt(numPregs.W)))
 

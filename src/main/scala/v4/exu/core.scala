@@ -37,7 +37,7 @@ import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.rocket.Instructions._
 import freechips.rocketchip.rocket.{Causes, PRV, CSR, CSRs, TracedInstruction}
 import freechips.rocketchip.tile.{HasFPUParameters, TraceBundle}
-import freechips.rocketchip.util.{Str, UIntIsOneOf, CoreMonitorBundle, PlusArg}
+import freechips.rocketchip.util.{Str, UIntIsOneOf, CoreMonitorBundle}
 import freechips.rocketchip.devices.tilelink.{PLICConsts, CLINTConsts}
 
 import boom.v4.common._
@@ -1270,7 +1270,6 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
         reset.asBool) {
     idle_cycles := 0.U
   }
-  assert (!(idle_cycles.value(PlusArg("boom_timeout", 13, width=5))), "Pipeline has hung.")
 
   fp_pipeline.io.debug_tsc_reg := debug_tsc_reg
 
@@ -1347,7 +1346,7 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
   val coreMonitorBundle = Wire(new CoreMonitorBundle(xLen, fLen))
   coreMonitorBundle := DontCare
   coreMonitorBundle.clock  := clock
-  coreMonitorBundle.reset  := reset
+  coreMonitorBundle.reset  := reset.asBool
 
 
   //-------------------------------------------------------------
