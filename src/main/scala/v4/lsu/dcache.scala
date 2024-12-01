@@ -409,11 +409,13 @@ class BoomNonBlockingDCache(staticIdForMetadataUseOnly: Int)(implicit p: Paramet
   protected def cacheClientParameters = cfg.scratch.map(x => Seq()).getOrElse(Seq(TLMasterParameters.v1(
     name          = s"Core ${staticIdForMetadataUseOnly} DCache",
     sourceId      = IdRange(0, 1 max (cfg.nMSHRs + 1)),
+    visibility    = AddressSet(0x0L, (0x1L << 38) - 1).subtract(AddressSet(0x0L, 0x7FFF_FFFFL)),
     supportsProbe = TransferSizes(cfg.blockBytes, cfg.blockBytes))))
 
   protected def mmioClientParameters = Seq(TLMasterParameters.v1(
     name          = s"Core ${staticIdForMetadataUseOnly} DCache MMIO",
     sourceId      = IdRange(cfg.nMSHRs + 1, cfg.nMSHRs + 1 + cfg.nMMIOs),
+    visibility    = Seq(AddressSet(0x0L, 0x7FFF_FFFFL)),
     requestFifo   = true))
 
   val node = TLClientNode(Seq(TLMasterPortParameters.v1(

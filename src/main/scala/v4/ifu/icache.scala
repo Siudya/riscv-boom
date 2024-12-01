@@ -44,6 +44,7 @@ class ICache(
   lazy val module = new ICacheModule(this)
   val masterNode = TLClientNode(Seq(TLMasterPortParameters.v1(Seq(TLMasterParameters.v1(
     sourceId = IdRange(0, 1 + icacheParams.prefetch.toInt), // 0=refill, 1=hint
+    visibility = Seq(AddressSet(0x0L, (0x1L << 38) - 1)),
     name = s"Core ${tileId} ICache")))))
 
   val size = icacheParams.nSets * icacheParams.nWays * icacheParams.blockBytes
@@ -93,8 +94,6 @@ class ICacheBundle(val outer: ICache) extends BoomBundle()(outer.p)
 class ICacheModule(outer: ICache) extends LazyModuleImp(outer)
   with HasBoomFrontendParameters
 {
-  override def tlBundleParams = outer.masterNode.out.head._2.bundle
-
   val enableICacheDelay = tileParams.core.asInstanceOf[BoomCoreParams].enableICacheDelay
   val icacheSinglePorted = tileParams.core.asInstanceOf[BoomCoreParams].icacheSinglePorted
   val io = IO(new ICacheBundle(outer))

@@ -1817,6 +1817,7 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
   io.hellacache.resp.bits.dprv     := io.ptw.status.prv
   io.hellacache.resp.bits.dv       := io.ptw.status.v
   io.hellacache.resp.bits.data     := io.dmem.ll_resp.bits.data
+  io.hellacache.resp.bits.idx.foreach(_ := DontCare)
 
   when (hella_state === h_ready) {
     io.hellacache.req.ready := true.B
