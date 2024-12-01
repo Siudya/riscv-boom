@@ -799,9 +799,8 @@ class BoomNonBlockingDCacheModule(outer: BoomNonBlockingDCache) extends LazyModu
                             !s2_nack_wb(w)        &&
                              s2_type.isOneOf(t_lsu, t_prefetch)             &&
                             !(io.lsu.exception && s2_req(w).uop.uses_ldq)   &&
-                             (isPrefetch(s2_req(w).uop.mem_cmd) ||
-                              isRead(s2_req(w).uop.mem_cmd)     ||
-                              isWrite(s2_req(w).uop.mem_cmd))
+                             (isPrefetch(s2_req(w).uop.mem_cmd) || isRead(s2_req(w).uop.mem_cmd) ||
+                              isWrite(s2_req(w).uop.mem_cmd) || isAMO(s2_req(w).uop.mem_cmd))
     assert(!(mshrs.io.req(w).valid && s2_type === t_replay), "Replays should not need to go back into MSHRs")
     mshrs.io.req(w).bits             := DontCare
     mshrs.io.req(w).bits.uop         := s2_req(w).uop

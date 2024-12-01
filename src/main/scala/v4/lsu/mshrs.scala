@@ -546,8 +546,8 @@ class BoomMSHRFile(implicit edge: TLEdgeOut, p: Parameters) extends BoomModule()
 
   io.prefetch <> prefetcher.io.prefetch
 
+  val cacheable = edge.manager.supportsAcquireBFast(req.bits.addr, lgCacheBlockBytes.U) && !isAMO(req.bits.uop.mem_cmd)
 
-  val cacheable = edge.manager.supportsAcquireBFast(req.bits.addr, lgCacheBlockBytes.U)
 
   // --------------------
   // The MSHR SDQ
