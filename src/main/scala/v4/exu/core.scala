@@ -200,7 +200,7 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
   // Dealing with branch resolutions
 
   // The individual branch resolutions from each ALU
-  val brinfos = Reg(Vec(coreWidth, Valid(new BrResolutionInfo)))
+  val brinfos = RegInit(VecInit(Seq.fill(coreWidth)(0.U.asTypeOf(Valid(new BrResolutionInfo)))))
 
   // "Merged" branch update info from all ALUs
   // brmask contains masks for rapidly clearing mispredicted instructions
@@ -214,8 +214,9 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
   brupdate.b2 := b2
 
   for ((b, a) <- brinfos zip alu_exe_units) {
-    b.bits := UpdateBrMask(brupdate, a.io_brinfo.bits)
-    b.valid := a.io_brinfo.valid && !rob.io.flush.valid && !IsKilledByBranch(brupdate, RegNext(rob.io.flush.valid), a.io_brinfo.bits)
+    val brv = a.io_brinfo.valid && !rob.io.flush.valid && !IsKilledByBranch(brupdate, RegNext(rob.io.flush.valid), a.io_brinfo.bits)
+    b.bits := Mux(brv, UpdateBrMask(brupdate, a.io_brinfo.bits), b.bits)
+    b.valid := brv
   }
   b1.resolve_mask := brinfos.map(x => x.valid << x.bits.uop.br_tag).reduce(_|_)
   b1.mispredict_mask := brinfos.map(x => (x.valid && x.bits.mispredict) << x.bits.uop.br_tag).reduce(_|_)

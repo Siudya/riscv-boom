@@ -59,11 +59,7 @@ class RenameFreeList(
     extends AbstractRenameFreeList(allocWidth, deallocWidth, numPregs)
 {
   // The free list register array and its branch allocation lists.
-  val resetReg = RegNext(false.B, true.B)
   val free_list = Reg(UInt(numPregs.W))
-  when(resetReg) {
-    free_list := io.initial_allocation
-  }
   val spec_alloc_list = RegInit(0.U(numPregs.W))
   val br_alloc_lists = Reg(Vec(maxBrCount, UInt(numPregs.W)))
 
@@ -120,7 +116,11 @@ class RenameFreeList(
   spec_alloc_list := (spec_alloc_list | alloc_masks(0)) & ~dealloc_mask & ~com_despec
 
   // Update the free list.
+  val resetReg = RegNext(false.B, true.B)
   free_list     := (free_list & ~sel_mask) | dealloc_mask
+  when(resetReg) {
+    free_list := io.initial_allocation
+  }
 
   // Pipeline logic | hookup outputs.
   for (w <- 0 until allocWidth) {

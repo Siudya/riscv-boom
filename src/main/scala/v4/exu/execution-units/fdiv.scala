@@ -33,7 +33,7 @@ class FDivSqrtUnit2(implicit p: Parameters)
 {
   val divSqrt_inFlight = WireInit(false.B)
 
-  val r_req = Reg(Valid(new FuncUnitReq(dataWidth=65)))
+  val r_req = RegInit(0.U.asTypeOf(Valid(new FuncUnitReq(dataWidth=65))))
   val r_sigs = Reg(new tile.FPUCtrlSigs)
   val r_rm = Reg(UInt())
   val r_out_valid = Reg(Bool())

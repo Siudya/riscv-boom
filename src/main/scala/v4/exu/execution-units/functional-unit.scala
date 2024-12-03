@@ -398,7 +398,7 @@ class DivUnit(dataWidth: Int)(implicit p: Parameters)
   // Instead we use the PipelinedMultiplier
   val div = Module(new freechips.rocketchip.rocket.MulDiv(mulDivParams, width = dataWidth))
 
-  val req = Reg(Valid(new MicroOp()))
+  val req = RegInit(0.U.asTypeOf(Valid(new MicroOp())))
 
   when (io.req.fire) {
     req.valid := !IsKilledByBranch(io.brupdate, io.kill, io.req.bits)

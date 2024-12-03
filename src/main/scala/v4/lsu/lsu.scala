@@ -217,7 +217,7 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
   //val ldq                 = Reg(Vec(numLdqEntries, Valid(new LDQEntry)))
   val ldq_valid               = Reg(Vec(numLdqEntries, Bool()))
   val ldq_uop                 = Reg(Vec(numLdqEntries, new MicroOp))
-  val ldq_addr                = Reg(Vec(numLdqEntries, Valid(UInt(coreMaxAddrBits.W))))
+  val ldq_addr                = RegInit(VecInit(Seq.fill(numLdqEntries)(0.U.asTypeOf(Valid(UInt(coreMaxAddrBits.W))))))
   val ldq_addr_is_virtual     = Reg(Vec(numLdqEntries, Bool()))
   val ldq_addr_is_uncacheable = Reg(Vec(numLdqEntries, Bool()))
   val ldq_executed            = Reg(Vec(numLdqEntries, Bool()))
@@ -250,7 +250,7 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
   //val stq = Reg(Vec(numStqEntries, Valid(new STQEntry)))
   val stq_valid           = Reg(Vec(numStqEntries, Bool()))
   val stq_uop             = Reg(Vec(numStqEntries, new MicroOp))
-  val stq_addr            = Reg(Vec(numStqEntries, Valid(UInt(coreMaxAddrBits.W))))
+  val stq_addr            = RegInit(VecInit(Seq.fill(numStqEntries)(0.U.asTypeOf(Valid(UInt(coreMaxAddrBits.W))))))
   val stq_addr_is_virtual = Reg(Vec(numStqEntries, Bool()))
   val stq_data            = Reg(Vec(numStqEntries, Valid(UInt(xLen.W))))
   val stq_committed       = Reg(Vec(numStqEntries, Bool()))
@@ -511,13 +511,13 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
 
 
   // Enqueue into the retry queue
-  val ldq_enq_retry_idx = Reg(UInt(ldqAddrSz.W))
+  val ldq_enq_retry_idx = RegInit(0.U(ldqAddrSz.W))
   ldq_enq_retry_idx := AgePriorityEncoder((0 until numLdqEntries).map(i => {
     ldq_addr(i).valid && ldq_addr_is_virtual(i) && (i.U =/= ldq_enq_retry_idx)
   }), ldq_head)
   val ldq_enq_retry_e = WireInit(ldq_read(ldq_enq_retry_idx))
 
-  val stq_enq_retry_idx = Reg(UInt(stqAddrSz.W))
+  val stq_enq_retry_idx = RegInit(0.U(stqAddrSz.W))
   stq_enq_retry_idx := AgePriorityEncoder((0 until numStqEntries).map(i => {
     stq_addr(i).valid && stq_addr_is_virtual(i) && (i.U =/= stq_enq_retry_idx)
   }), stq_commit_head)
@@ -1496,11 +1496,11 @@ class LSU(implicit p: Parameters, edge: TLEdgeOut) extends BoomModule()(p)
 
   val dmem_resp_fired = WireInit(widthMap(w => false.B))
   for (w <- 0 until lsuWidth) {
-    val w1 = Reg(Valid(new Wakeup))
+    val w1 = RegInit(0.U.asTypeOf(Valid(new Wakeup)))
     w1.valid := wakeupArbs(w).io.in(1).fire && !IsKilledByBranch(io.core.brupdate, io.core.exception, wakeupArbs(w).io.in(1).bits)
     w1.bits  := UpdateBrMask(io.core.brupdate, wakeupArbs(w).io.in(1).bits)
 
-    val w2 = Reg(Valid(new Wakeup))
+    val w2 = RegInit(0.U.asTypeOf(Valid(new Wakeup)))
     w2.valid := w1.valid && !IsKilledByBranch(io.core.brupdate, io.core.exception, w1.bits)
     w2.bits  := UpdateBrMask(io.core.brupdate, w1.bits)
 
