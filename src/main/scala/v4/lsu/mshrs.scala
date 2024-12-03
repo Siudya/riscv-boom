@@ -134,7 +134,7 @@ class BoomMSHR(implicit edge: TLEdgeOut, p: Parameters) extends BoomModule()(p)
   rpq.io.deq.ready := false.B
 
 
-  val grantack = Reg(Valid(new TLBundleE(edge.bundle)))
+  val grantack = RegInit(0.U.asTypeOf(Valid(new TLBundleE(edge.bundle))))
   val refill_ctr  = Reg(UInt(log2Ceil(cacheDataBeats).W))
   val commit_line = Reg(Bool())
   val grant_had_data = Reg(Bool())

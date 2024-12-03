@@ -89,15 +89,18 @@ abstract class ExecutionUnit(name: String)(implicit p: Parameters) extends BoomM
 
   val io_iss_uop = IO(Input(Valid(new MicroOp)))
 
-  val arb_uop = Reg(Valid(new MicroOp))
-  arb_uop.valid := io_iss_uop.valid && !IsKilledByBranch(io_brupdate, io_kill, io_iss_uop.bits)
-  arb_uop.bits  := UpdateBrMask(io_brupdate, io_iss_uop.bits)
-  val rrd_uop = Reg(Valid(new MicroOp))
-  rrd_uop.valid := arb_uop.valid && !IsKilledByBranch(io_brupdate, io_kill, arb_uop.bits)
-  rrd_uop.bits  := UpdateBrMask(io_brupdate, arb_uop.bits)
-  val exe_uop = Reg(Valid(new MicroOp))
-  exe_uop.valid := rrd_uop.valid && !IsKilledByBranch(io_brupdate, io_kill, rrd_uop.bits)
-  exe_uop.bits  := UpdateBrMask(io_brupdate, rrd_uop.bits)
+  val arb_uop = RegInit(0.U.asTypeOf(Valid(new MicroOp)))
+  val arb_v = io_iss_uop.valid && !IsKilledByBranch(io_brupdate, io_kill, io_iss_uop.bits)
+  arb_uop.valid := arb_v
+  arb_uop.bits  := Mux(arb_v, UpdateBrMask(io_brupdate, io_iss_uop.bits), arb_uop.bits)
+  val rrd_uop = RegInit(0.U.asTypeOf(Valid(new MicroOp)))
+  val rrd_v = arb_uop.valid && !IsKilledByBranch(io_brupdate, io_kill, arb_uop.bits)
+  rrd_uop.valid := rrd_v
+  rrd_uop.bits  := Mux(rrd_v, UpdateBrMask(io_brupdate, arb_uop.bits), rrd_uop.bits)
+  val exe_uop = RegInit(0.U.asTypeOf(Valid(new MicroOp)))
+  val exe_v = rrd_uop.valid && !IsKilledByBranch(io_brupdate, io_kill, rrd_uop.bits)
+  exe_uop.valid := exe_v
+  exe_uop.bits  := Mux(exe_v, UpdateBrMask(io_brupdate, rrd_uop.bits), exe_uop.bits)
 }
 
 trait HasIrfReadPorts { this: ExecutionUnit =>
@@ -291,7 +294,7 @@ class MemExeUnit(
 
     val agen = IO(Output(Valid(new MemGen)))
     if (enableAgenStage) {
-      val agen_reg = Reg(Valid(new MemGen))
+      val agen_reg = RegInit(0.U.asTypeOf(Valid(new MemGen)))
       agen_reg.valid    := (
         exe_uop.valid &&
         exe_uop.bits.fu_code(FC_AGEN) &&
