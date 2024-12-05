@@ -60,11 +60,13 @@ class RenameFreeList(
 {
   // The free list register array and its branch allocation lists.
   val free_list = Reg(UInt(numPregs.W))
+  val free_list_next = Wire(UInt(numPregs.W))
   val spec_alloc_list = RegInit(0.U(numPregs.W))
   val br_alloc_lists = Reg(Vec(maxBrCount, UInt(numPregs.W)))
 
   // Select pregs from the free list.
   val sels = SelectFirstN(free_list, allocWidth)
+  val sels_next = SelectFirstN(free_list_next, allocWidth)
   val sel_fire  = Wire(Vec(allocWidth, Bool()))
 
   // Allocations seen by branches in each pipeline slot.
@@ -117,22 +119,32 @@ class RenameFreeList(
 
   // Update the free list.
   val resetReg = RegNext(false.B, true.B)
-  free_list     := (free_list & ~sel_mask) | dealloc_mask
+  free_list := free_list_next
+  free_list_next := (free_list & ~sel_mask) | dealloc_mask
   when(resetReg) {
-    free_list := io.initial_allocation
+    free_list_next := io.initial_allocation
   }
 
   // Pipeline logic | hookup outputs.
   for (w <- 0 until allocWidth) {
     val can_sel = sels(w).orR
-    val r_valid = RegInit(false.B)
-    val r_sel   = RegEnable(OHToUInt(sels(w)), sel_fire(w))
+    val can_sel_next = sels_next(w).orR
+    val sel = OHToUInt(sels(w))
+    val sel_next = OHToUInt(sels_next(w))
 
-    r_valid := r_valid && !io.reqs(w) || can_sel
-    sel_fire(w) := (!r_valid || io.reqs(w)) && can_sel
+    val r_valid = RegNext(can_sel_next)
+    val r_sel   = RegNext(sel_next)
 
+    sel_fire(w) := r_valid && io.reqs(w)
     io.alloc_pregs(w).bits  := r_sel
     io.alloc_pregs(w).valid := r_valid
+
+    when(can_sel) {
+      assert(r_valid === true.B)
+      assert(r_sel === sel, cf"alloc port $w value get 0x$r_sel%x expect 0x$sel%x")
+    }.otherwise {
+      assert(r_valid === false.B)
+    }
   }
 
   io.debug_freelist := free_list | io.alloc_pregs.map(p => UIntToOH(p.bits)(n-1,0) & Fill(n,p.valid)).reduce(_|_)
